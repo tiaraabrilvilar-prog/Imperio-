@@ -34,19 +34,64 @@ const categorias = {
 };
 
 const gallery = document.getElementById("gallery");
-function render(id){
-  gallery.innerHTML = categorias[id].map(([f,c])=>
-    `<figure><img src="assets/${f}" alt="${c}" loading="lazy"><figcaption>${c}</figcaption></figure>`
-  ).join("");
+let current = "bebe";
+let index = 0;
+let autoplayId = null;
+
+function buildCarousel(id){
+  current = id;
+  index = 0;
+  const items = categorias[id];
+  gallery.innerHTML = `
+    <div class="carousel">
+      <button class="carousel-btn prev" aria-label="Anterior">‹</button>
+      <div class="carousel-track">
+        ${items.map(([f,c])=>`
+          <figure class="carousel-slide">
+            <img src="assets/${f}" alt="${c}" loading="lazy">
+            <figcaption>${c}</figcaption>
+          </figure>`).join("")}
+      </div>
+      <button class="carousel-btn next" aria-label="Siguiente">›</button>
+      <div class="carousel-dots">
+        ${items.map((_,i)=>`<button class="dot${i===0?' active':''}" data-i="${i}" aria-label="Ir a ${i+1}"></button>`).join("")}
+      </div>
+    </div>`;
+  update();
+  gallery.querySelector(".prev").onclick = ()=>{ go(index-1); resetAutoplay(); };
+  gallery.querySelector(".next").onclick = ()=>{ go(index+1); resetAutoplay(); };
+  gallery.querySelectorAll(".dot").forEach(d=>{
+    d.onclick = ()=>{ go(parseInt(d.dataset.i)); resetAutoplay(); };
+  });
+  resetAutoplay();
 }
+
+function go(i){
+  const items = categorias[current];
+  index = (i + items.length) % items.length;
+  update();
+}
+
+function update(){
+  const track = gallery.querySelector(".carousel-track");
+  if(!track) return;
+  track.style.transform = `translateX(-${index*100}%)`;
+  gallery.querySelectorAll(".dot").forEach((d,i)=>d.classList.toggle("active",i===index));
+}
+
+function resetAutoplay(){
+  clearInterval(autoplayId);
+  autoplayId = setInterval(()=>go(index+1), 5000);
+}
+
 document.querySelectorAll(".tab").forEach(btn=>{
   btn.addEventListener("click",()=>{
     document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
-    render(btn.dataset.tab);
+    buildCarousel(btn.dataset.tab);
   });
 });
-render("bebe");
+buildCarousel("bebe");
 
 const snack = document.getElementById("snack");
 snack.addEventListener("click",()=>{ snack.textContent="Snack recibido. Tigre evalúa. 😼"; });
